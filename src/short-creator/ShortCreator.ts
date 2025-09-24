@@ -218,6 +218,59 @@ export class ShortCreator {
     return videoId;
   }
 
+   private async createLongHorror(
+    videoId: string,
+    inputScenes: SceneInput[],
+    config: RenderConfig,
+  ): Promise<string> {
+    logger.debug(
+    {inputScenes, config},
+    "Creating long horror video"
+    )
+    const scenes: Scene[] = [];
+    let totalDuration = 0;
+    const excludeVideoIds = [];
+    const tempFiles = [];
+
+    const orientation: OrientationEnum = OrientationEnum.landscape;
+    let index = 0;
+    for (const scene of inputScenes) {
+      const audio = await this.kokoro.generate(
+        scene.text,
+        "am_michael"
+      );
+      let { audioLength } = audio;
+      const { audio: audioStream } = audio;
+
+      if (index + 1 === inputScenes.length && config.paddingBack) {
+        audioLength += config.paddingBack / 1000;
+      }
+
+      const tempId = cuid();
+      const tempWavFileName = `${tempId}.wav`;
+      const tempMp3FileName = `${tempId}.mp3`;
+      const tempVideoFileName = `${tempId}.mp4`;
+      const tempWavPath = path.join(this.config.tempDirPath, tempWavFileName);
+      const tempMp3Path = path.join(this.config.tempDirPath, tempMp3FileName);
+      const tempVideoPath = path.join(
+        this.config.tempDirPath,
+        tempVideoFileName,
+      );
+      tempFiles.push(tempVideoPath);
+      tempFiles.push(tempWavPath, tempMp3Path);
+
+      await this.ffmpeg.saveNormalizedAudio(audioStream, tempWavPath);
+      const captions = await this.whisper.CreateCaption(tempWavPath);
+
+      await this.ffmpeg.saveToMp3(audioStream, tempMp3Path);
+      
+      
+  
+  }
+
+
+  
+
   public getVideoPath(videoId: string): string {
     return path.join(this.config.videosDirPath, `${videoId}.mp4`);
   }
